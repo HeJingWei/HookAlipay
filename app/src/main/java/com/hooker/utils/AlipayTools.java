@@ -37,7 +37,7 @@ public class AlipayTools {
      */
     public static String getBillInfo(ClassLoader classLoader) {
         try {
-            Object executeRPC = hookListInfo(classLoader, "2020041722001450911452205397");
+            Object executeRPC = hookListInfo(classLoader,"TRADE", "2020041722001450911452205397");
             return executeRPC == null ? "无此订单详情" : executeRPC.toString();
 
         } catch (Throwable e) {
@@ -75,7 +75,7 @@ public class AlipayTools {
      * @param classLoader
      * @return
      */
-    private static Object hookListInfo(ClassLoader classLoader, String tradeNo) {
+    private static Object hookListInfo(ClassLoader classLoader, String type,String tradeNo) {
         Class<?> AlipayApplication = XposedHelpers.findClass("com.alipay.mobile.framework.AlipayApplication", classLoader);
         Object instance = XposedHelpers.callStaticMethod(AlipayApplication, "getInstance");
 
@@ -88,7 +88,7 @@ public class AlipayTools {
         Object simpleRpcService = XposedHelpers.callMethod(rpcService, "getRpcProxy", simpleRpcServiceClass);
 
         Object executeRPC = XposedHelpers.callMethod(simpleRpcService, "executeRPC", "alipay.mobile.bill.QuerySingleBillDetailForH5",
-                "[{\"bizType\":\"TRADE\",\"queryOrder\":false,\"tradeNo\":\"" + tradeNo + "\",\"useCardStyle\":\"\"}]",
+                "[{\"bizType\":\""+type+"\",\"queryOrder\":false,\"tradeNo\":\"" + tradeNo + "\",\"useCardStyle\":\"\"}]",
                 null);
 
         return executeRPC;
@@ -165,7 +165,7 @@ public class AlipayTools {
         Object gmtCreate = XposedHelpers.getObjectField(obj, "gmtCreate");
         Long createTime = Long.valueOf(gmtCreate.toString());
         if (System.currentTimeMillis() - createTime < 3 * 24 * 60 * 60 * 1000) {
-            Object executeRPC = hookListInfo(classLoader, XposedHelpers.getObjectField(obj, "bizInNo").toString());
+            Object executeRPC = hookListInfo(classLoader,XposedHelpers.getObjectField(obj, "bizType").toString(), XposedHelpers.getObjectField(obj, "bizInNo").toString());
             log("filter detail:" + executeRPC.toString());
             if (executeRPC != null) {
                 JSONObject parse = JSONObject.parseObject(executeRPC.toString());
